@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UP GOLD ACQUISIZIONI PRO</title>
+
+<style>
+:root {
+  --bg: #101010;
+  --panel: #1c1c1c;
+  --gold: #c8a76b;
+  --text: #f5f0e8;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: Arial, sans-serif;
+}
+
+header {
+  background: #080808;
+  padding: 25px;
+  text-align: center;
+  border-bottom: 2px solid var(--gold);
+}
+
+h1, h2, h3 {
+  color: var(--gold);
+}
+
+nav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  padding: 15px;
+  background: #171717;
+}
+
+button {
+  background: var(--gold);
+  color: #111;
+  border: none;
+  padding: 12px 18px;
+  border-radius: 7px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #e1c38c;
+}
+
+main {
+  max-width: 1200px;
+  margin: auto;
+  padding: 20px;
+}
+
+section {
+  display: none;
+}
+
+section.active {
+  display: block;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(220px, 1fr)
+  );
+  gap: 20px;
+}
+
+.card, .panel {
+  background: var(--panel);
+  padding: 22px;
+  border: 1px solid #51432c;
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+
+.card {
+  text-align: center;
+}
+
+.number {
+  font-size: 30px;
+  color: var(--gold);
+  font-weight: bold;
+}
+
+input, select {
+  width: 100%;
+  padding: 12px;
+  margin: 8px 0 15px;
+  background: #292929;
+  border: 1px solid #796441;
+  border-radius: 6px;
+  color: white;
+}
+
+label {
+  display: block;
+  margin-top: 8px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th, td {
+  padding: 12px;
+  border-bottom: 1px solid #444;
+  text-align: left;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+small {
+  color: #bbb;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>UP GOLD ACQUISIZIONI PRO</h1>
+  <p>Gestionale Immobiliare Professionale</p>
+  <small>Eleganza • Controllo • Previsionale</small>
+</header>
+
+<nav>
+  <button onclick="show('dashboard')">Dashboard</button>
+  <button onclick="show('immobili')">Immobili</button>
+  <button onclick="show('previsionale')">Previsionale</button>
+  <button onclick="show('movimenti')">Entrate e Uscite</button>
+</nav>
+
+<main>
+
+<div class="panel" id="accessoPanel">
+  <h3>Collegamento Supabase</h3>
+  <p id="statoConnessione">Configura il collegamento e accedi per sincronizzare i dati.</p>
+  <div id="configPanel">
+    <label>URL del progetto Supabase</label>
+    <input id="supabaseUrl" placeholder="https://tuoprogetto.supabase.co" autocomplete="off">
+    <label>Chiave pubblicabile (publishable o anon)</label>
+    <input id="supabaseKey" type="password" placeholder="sb_publishable_... oppure eyJ..." autocomplete="off">
+    <button onclick="configura()">Salva configurazione</button>
+  </div>
+  <div id="loginPanel">
+    <label>Email dell'account Supabase</label><input id="loginEmail" type="email" autocomplete="username">
+    <label>Password</label><input id="loginPassword" type="password" autocomplete="current-password">
+    <button onclick="accedi()">Accedi</button>
+    <button onclick="esci()" style="margin-left:8px">Esci</button>
+  </div>
+  <small>Usa soltanto la chiave pubblicabile o anon. Non inserire mai la chiave secret/service_role.</small>
+</div>
+
+
+<section id="dashboard" class="active">
+  <h2>Dashboard Generale</h2>
+
+  <div class="cards">
+    <div class="card">
+      <h3>Fatturato previsto</h3>
+      <div class="number" id="fatturato">€ 0,00</div>
+    </div>
+
+    <div class="card">
+      <h3>Commissioni previste</h3>
+      <div class="number" id="commissioni">€ 0,00</div>
+    </div>
+
+    <div class="card">
+      <h3>Netto agenzia stimato</h3>
+      <div class="number" id="netto">€ 0,00</div>
+    </div>
+
+    <div class="card">
+      <h3>Immobili registrati</h3>
+      <div class="number" id="totImmobili">0</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>Riepilogo economico</h3>
+    <p>Le previsioni sono separate dai movimenti effettivi.</p>
+    <p id="riepilogo"></p>
+  </div>
+</section>
+
+<section id="immobili">
+  <h2>Gestione Immobili</h2>
+
+  <div class="panel">
+    <h3>Nuovo immobile</h3>
+
+    <label>Nome immobile</label>
+    <input id="nome" placeholder="Villa Gold">
+
+    <label>Città</label>
+    <input id="citta" placeholder="Inserisci città">
+
+    <label>Tipologia</label>
+    <select id="tipo">
+      <option>Villa</option>
+      <option>Appartamento</option>
+      <option>Casa vacanze</option>
+      <option>Attico</option>
+      <option>Altro</option>
+    </select>
+
+    <label>Posti letto</label>
+    <input id="letti" type="number" min="1" value="4">
+
+    <label>Numero bagni</label>
+    <input id="bagni" type="number" min="1" value="1">
+
+    <label>Prezzo base a notte (€)</label>
+    <input id="prezzo" type="number" min="0" step="0.01" value="160.33">
+
+    <label>Commissione agenzia (%)</label>
+    <input id="percentuale" type="number"
+           min="0" max="100" value="20">
+
+    <button onclick="aggiungiImmobile()">
+      Salva immobile
+    </button>
+  </div>
+
+  <div class="panel">
+    <h3>Elenco immobili</h3>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th>Città</th>
+            <th>Prezzo</th>
+            <th>Commissione</th>
+            <th>Azioni</th>
+          </tr>
+        </thead>
+        <tbody id="listaImmobili"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section id="previsionale">
+  <h2>Previsionale Immobiliare</h2>
+
+  <div class="panel">
+    <label>Seleziona immobile</label>
+    <select id="immobilePrevisione"></select>
+
+    <label>Prezzo bassa stagione (€)</label>
+    <input id="bassa" type="number" min="0" step="0.01">
+
+    <label>Prezzo alta stagione (€)</label>
+    <input id="alta" type="number" min="0" step="0.01">
+
+    <label>Notti previste in bassa stagione</label>
+    <input id="nottiBassa" type="number" min="0" value="60">
+
+    <label>Notti previste in alta stagione</label>
+    <input id="nottiAlta" type="number" min="0" value="90">
+
+    <label>Costi previsti a carico agenzia (€)</label>
+    <input id="costi" type="number" min="0" step="0.01" value="0">
+
+    <button onclick="calcola()">
+      Calcola e salva previsione
+    </button>
+  </div>
+
+  <div class="cards">
+    <div class="card">
+      <h3>Ricavi pernottamenti</h3>
+      <div class="number" id="ricaviPrev">€ 0,00</div>
+    </div>
+
+    <div class="card">
+      <h3>Commissione agenzia</h3>
+      <div class="number" id="commPrev">€ 0,00</div>
+    </div>
+
+    <div class="card">
+      <h3>Netto previsto</h3>
+      <div class="number" id="nettoPrev">€ 0,00</div>
+    </div>
+  </div>
+</section>
+
+<section id="movimenti">
+  <h2>Entrate e Uscite</h2>
+
+  <div class="cards">
+    <div class="panel">
+      <h3>Entrate effettive agenzia</h3>
+
+      <label>Descrizione</label>
+      <input id="descEntrata" placeholder="Commissione incassata">
+
+      <label>Importo (€)</label>
+      <input id="valEntrata" type="number"
+             min="0.01" step="0.01">
+
+      <button onclick="movimento('entrata')">
+        Registra entrata
+      </button>
+    </div>
+
+    <div class="panel">
+      <h3>Uscite effettive agenzia</h3>
+
+      <label>Descrizione</label>
+      <input id="descUscita" placeholder="Pubblicità">
+
+      <label>Importo (€)</label>
+      <input id="valUscita" type="number"
+             min="0.01" step="0.01">
+
+      <button onclick="movimento('uscita')">
+        Registra uscita
+      </button>
+    </div>
+  </div>
+
+  <div class="cards">
+    <div class="card">
+      <h3>Entrate reali</h3>
+      <div class="number" id="entrateReali">€ 0,00</div>
+    </div>
+
+    <div class="card">
+      <h3>Uscite reali</h3>
+      <div class="number" id="usciteReali">€ 0,00</div>
+    </div>
+
+    <div class="card">
+      <h3>Saldo reale</h3>
+      <div class="number" id="saldoReale">€ 0,00</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>Registro movimenti</h3>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Descrizione</th>
+            <th>Tipo</th>
+            <th>Importo</th>
+          </tr>
+        </thead>
+        <tbody id="listaMovimenti"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const KEY = "upgold_pro_v1";
+const CONFIG_KEY = "upgold_supabase_config_v1";
+let db = null, user = null, dati = {immobili:[],previsioni:{},movimenti:[]};
+const $ = id => document.getElementById(id);
+const euro = n => new Intl.NumberFormat("it-IT",{style:"currency",currency:"EUR"}).format(Number(n)||0);
+function stato(msg){ $("statoConnessione").textContent=msg; }
+function errore(e){ console.error(e); alert("Operazione non riuscita: "+(e?.message||String(e))); }
+function richiediAccesso(){if(!db||!user){alert("Prima configura Supabase ed effettua l'accesso.");return false;}return true;}
+function configura(){
+ const url=$("supabaseUrl").value.trim(), key=$("supabaseKey").value.trim();
+ if(!/^https:\/\/[a-z0-9-]+\.supabase\.co\/?$/i.test(url)||!key){alert("Inserisci URL Supabase valido e chiave pubblicabile.");return;}
+ if(key.startsWith("sb_secret_")){alert("Non utilizzare una chiave segreta.");return;}
+ localStorage.setItem(CONFIG_KEY,JSON.stringify({url,key}));
+ inizializza();
+}
+async function inizializza(){
+ const cfg=JSON.parse(localStorage.getItem(CONFIG_KEY)||"null");
+ if(!cfg){stato("Inserisci URL e chiave pubblicabile del progetto Supabase.");return;}
+ $("supabaseUrl").value=cfg.url;$("supabaseKey").value=cfg.key;
+ if(!window.supabase){stato("Libreria Supabase non caricata: verifica la connessione Internet.");return;}
+ try{
+  db=window.supabase.createClient(cfg.url,cfg.key);
+  const {data,error}=await db.auth.getUser();if(error && error.name!=="AuthSessionMissingError")console.warn(error);
+  user=data?.user||null;
+  if(user)await carica();
+  else stato("Collegamento configurato. Accedi con il tuo account Supabase.");
+ }catch(e){stato("Errore nella configurazione.");errore(e);}
+}
+async function accedi(){
+ if(!db){alert("Prima salva URL e chiave pubblicabile.");return;}
+ const email=$("loginEmail").value.trim(),password=$("loginPassword").value;
+ if(!email||!password){alert("Inserisci email e password.");return;}
+ try{
+  const {data,error}=await db.auth.signInWithPassword({email,password});
+  if(error)throw error;
+  user=data.user;$("loginPassword").value="";await carica();
+ }catch(e){errore(e);}
+}
+async function esci(){
+ if(db)await db.auth.signOut();
+ user=null;dati={immobili:[],previsioni:{},movimenti:[]};aggiorna();stato("Disconnesso.");
+}
+function immobileDaDb(r){return {id:r.id,nome:r.nome,citta:r.citta||"",tipo:r.tipologia||"",letti:r.posti_letto||0,bagni:r.bagni||0,prezzo:Number(r.prezzo_base)||0,commissione:Number(r.commissione)||0};}
+function previsioneDaDb(r){return {bassa:Number(r.prezzo_bassa)||0,alta:Number(r.prezzo_alta)||0,nb:r.notti_bassa||0,na:r.notti_alta||0,costi:Number(r.costi_previsti)||0,ricavi:Number(r.ricavi_previsti)||0,commissioni:Number(r.commissioni_previste)||0,netto:Number(r.netto_previsto)||0};}
+async function carica(){
+ if(!richiediAccesso())return;
+ try{
+  stato("Sincronizzazione in corso...");
+  const [a,b,c]=await Promise.all([
+   db.from("immobili").select("*").eq("utente_id",user.id),
+   db.from("previsionali").select("*").eq("utente_id",user.id),
+   db.from("movimenti").select("*").eq("utente_id",user.id)
+  ]);
+  for(const r of [a,b,c])if(r.error)throw r.error;
+  dati.immobili=a.data.map(immobileDaDb);
+  dati.previsioni={};for(const r of b.data){dati.previsioni[r.immobile_id]=previsioneDaDb(r);}
+  dati.movimenti=c.data.map(r=>({id:r.id,tipo:r.tipo,descrizione:r.descrizione,importo:Number(r.importo)}));
+  aggiorna();stato("Connesso come "+user.email+" — dati sincronizzati.");
+ }catch(e){stato("Errore di sincronizzazione. Controlla permessi RLS e connessione.");errore(e);}
+}
+function show(id){document.querySelectorAll("section").forEach(s=>s.classList.remove("active"));$(id).classList.add("active");aggiorna();}
+async function aggiungiImmobile(){
+ if(!richiediAccesso())return;
+ const nome=$("nome").value.trim(),prezzo=Number($("prezzo").value),commissione=Number($("percentuale").value);
+ if(!nome||!Number.isFinite(prezzo)||prezzo<0||!Number.isFinite(commissione)||commissione<0||commissione>100){alert("Controlla nome, prezzo e commissione.");return;}
+ try{
+  const payload={utente_id:user.id,nome,citta:$("citta").value,tipologia:$("tipo").value,posti_letto:Number($("letti").value),bagni:Number($("bagni").value),prezzo_base:prezzo,commissione};
+  const {error}=await db.from("immobili").insert(payload);if(error)throw error;
+  await carica();alert("Immobile salvato su Supabase.");
+ }catch(e){errore(e);}
+}
+async function eliminaImmobile(id){
+ if(!richiediAccesso()||!confirm("Eliminare questo immobile e le relative previsioni e movimenti collegati?"))return;
+ try{
+  for(const tabella of ["previsionali","movimenti"]){
+   const {error}=await db.from(tabella).delete().eq("immobile_id",id).eq("utente_id",user.id);if(error)throw error;
+  }
+  const {error}=await db.from("immobili").delete().eq("id",id).eq("utente_id",user.id);if(error)throw error;
+  await carica();
+ }catch(e){errore(e);}
+}
+async function calcola(){
+ if(!richiediAccesso())return;
+ const id=$("immobilePrevisione").value,immobile=dati.immobili.find(x=>x.id===id);
+ if(!immobile){alert("Inserisci prima un immobile.");return;}
+ const bassa=Number($("bassa").value),alta=Number($("alta").value),nb=Number($("nottiBassa").value),na=Number($("nottiAlta").value),costi=Number($("costi").value);
+ if([bassa,alta,nb,na,costi].some(x=>!Number.isFinite(x)||x<0)||![nb,na].every(Number.isInteger)){alert("Inserisci valori validi.");return;}
+ const ricavi=bassa*nb+alta*na,commissioni=ricavi*immobile.commissione/100,netto=commissioni-costi;
+ const payload={utente_id:user.id,immobile_id:id,anno:new Date().getFullYear(),prezzo_bassa:bassa,prezzo_alta:alta,notti_bassa:nb,notti_alta:na,ricavi_previsti:ricavi,commissioni_previste:commissioni,costi_previsti:costi,netto_previsto:netto};
+ try{
+  // Aggiorna la previsione già presente per questo immobile, se esiste.
+  const {data:esistenti,error:err}=await db.from("previsionali").select("id").eq("utente_id",user.id).eq("immobile_id",id).order("anno",{ascending:false}).limit(1);
+  if(err)throw err;
+  const op=esistenti.length?db.from("previsionali").update(payload).eq("id",esistenti[0].id).eq("utente_id",user.id):db.from("previsionali").insert(payload);
+  const {error}=await op;if(error)throw error;
+  await carica();$("immobilePrevisione").value=id;aggiorna();alert("Previsione salvata su Supabase.");
+ }catch(e){errore(e);}
+}
+async function movimento(tipo){
+ if(!richiediAccesso())return;
+ const suffisso=tipo==="entrata"?"Entrata":"Uscita",descrizione=$("desc"+suffisso).value.trim(),importo=Number($("val"+suffisso).value);
+ if(!descrizione||!Number.isFinite(importo)||importo<=0){alert("Inserisci descrizione e importo valido.");return;}
+ try{
+  const {error}=await db.from("movimenti").insert({utente_id:user.id,tipo,descrizione,importo});if(error)throw error;
+  $("desc"+suffisso).value="";$("val"+suffisso).value="";await carica();
+ }catch(e){errore(e);}
+}
+function aggiorna(){
+ const lista=$("listaImmobili");lista.innerHTML="";
+ dati.immobili.forEach(x=>{
+  const tr=document.createElement("tr");
+  [x.nome,x.citta,euro(x.prezzo),x.commissione+"%"].forEach(v=>{const td=document.createElement("td");td.textContent=v;tr.appendChild(td);});
+  const td=document.createElement("td"),btn=document.createElement("button");btn.textContent="Elimina";btn.onclick=()=>eliminaImmobile(x.id);td.appendChild(btn);tr.appendChild(td);lista.appendChild(tr);
+ });
+ const select=$("immobilePrevisione"),selezionato=select.value;select.innerHTML="";
+ dati.immobili.forEach(x=>{const option=document.createElement("option");option.value=x.id;option.textContent=x.nome;select.appendChild(option);});
+ if(dati.immobili.some(x=>x.id===selezionato))select.value=selezionato;
+ let fatturato=0,commissioni=0,netto=0;
+ Object.values(dati.previsioni).forEach(p=>{fatturato+=p.ricavi;commissioni+=p.commissioni;netto+=p.netto;});
+ $("fatturato").textContent=euro(fatturato);$("commissioni").textContent=euro(commissioni);$("netto").textContent=euro(netto);$("totImmobili").textContent=dati.immobili.length;
+ const entrate=dati.movimenti.filter(x=>x.tipo==="entrata").reduce((s,x)=>s+x.importo,0);
+ const uscite=dati.movimenti.filter(x=>x.tipo==="uscita").reduce((s,x)=>s+x.importo,0);
+ $("entrateReali").textContent=euro(entrate);$("usciteReali").textContent=euro(uscite);$("saldoReale").textContent=euro(entrate-uscite);$("riepilogo").textContent="Saldo effettivo registrato: "+euro(entrate-uscite);
+ const registro=$("listaMovimenti");registro.innerHTML="";
+ dati.movimenti.forEach(m=>{const tr=document.createElement("tr");[m.descrizione,m.tipo,euro(m.importo)].forEach(v=>{const td=document.createElement("td");td.textContent=v;tr.appendChild(td);});registro.appendChild(tr);});
+ const p=dati.previsioni[select.value];$("ricaviPrev").textContent=euro(p?.ricavi);$("commPrev").textContent=euro(p?.commissioni);$("nettoPrev").textContent=euro(p?.netto);
+}
+$("immobilePrevisione").addEventListener("change",function(){
+ const immobile=dati.immobili.find(x=>x.id===this.value);if(!immobile)return;
+ const p=dati.previsioni[immobile.id];
+ $("bassa").value=p?.bassa??immobile.prezzo;$("alta").value=p?.alta??immobile.prezzo;
+ $("nottiBassa").value=p?.nb??60;$("nottiAlta").value=p?.na??90;$("costi").value=p?.costi??0;
+ aggiorna();
+});
+aggiorna();inizializza();
+</script>
+
+</body>
+</html>
