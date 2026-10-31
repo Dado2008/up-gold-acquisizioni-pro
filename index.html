@@ -23,6 +23,7 @@ body {
 }
 
 header {
+  position:relative;
   background: #080808;
   padding: 25px;
   text-align: center;
@@ -130,12 +131,40 @@ th, td {
 small {
   color: #bbb;
 }
+.account-trigger{position:absolute;right:20px;top:20px;display:flex;align-items:center;gap:9px}
+.account-menu{position:absolute;right:20px;top:75px;width:min(360px,calc(100vw - 40px));z-index:20;background:#1c1c1c;border:1px solid var(--gold);border-radius:12px;padding:18px;text-align:left;box-shadow:0 12px 35px #000a}
+.account-menu[hidden]{display:none}
+.account-avatar{width:35px;height:35px;border-radius:50%;border:1px solid var(--gold);object-fit:cover;background:#292929}
+.account-brand{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.account-brand img{width:55px;height:55px;object-fit:contain;border:1px solid #51432c;border-radius:9px}
+.account-menu label{font-size:13px}
+.account-menu input{margin:4px 0 10px}
+.account-menu button{margin:4px 3px 4px 0}
+.account-menu small{display:block;overflow-wrap:anywhere}
+@media(max-width:700px){header{padding-top:85px}.account-trigger{top:12px;right:12px}.account-menu{top:58px;right:10px}}
 </style>
 </head>
 
 <body>
 
 <header>
+  <div class="account-trigger">
+    <img id="avatarHeader" class="account-avatar" alt="" hidden>
+    <button id="accountButton" onclick="toggleAccount()" aria-expanded="false" aria-controls="accountMenu">◉ Il mio account ▾</button>
+  </div>
+  <div class="account-menu" id="accountMenu" hidden>
+    <div class="account-brand"><img id="agencyLogoPreview" alt="Logo agenzia"><div><strong id="agencyNamePreview">UP GOLD</strong><small id="accountEmail">Non connesso</small></div></div>
+    <div id="profileFields" hidden>
+      <label>Nome e cognome</label><input id="profileName" autocomplete="name">
+      <label>Nome agenzia</label><input id="agencyName" value="UP GOLD">
+      <label>Telefono</label><input id="agencyPhone" type="tel">
+      <label>Email agenzia</label><input id="agencyEmail" type="email">
+      <label>Logo agenzia (immagine dal computer)</label><input id="agencyLogo" type="file" accept="image/png,image/jpeg,image/webp">
+      <small>Le informazioni del profilo sono salvate soltanto su questo browser, non su Supabase.</small>
+      <button onclick="saveProfile()">Salva profilo</button>
+    </div>
+    <div id="accountAccess"></div>
+  </div>
   <h1>UP GOLD ACQUISIZIONI PRO</h1>
   <p>Gestionale Immobiliare Professionale</p>
   <small>Eleganza • Controllo • Previsionale</small>
@@ -150,8 +179,8 @@ small {
 
 <main>
 
-<div class="panel" id="accessoPanel">
-  <h3>Collegamento Supabase</h3>
+<div class="panel" id="accessoPanel" hidden>
+  <h3>Accesso e collegamento Supabase</h3>
   <p id="statoConnessione">Configura il collegamento e accedi per sincronizzare i dati.</p>
   <div id="configPanel">
     <label>URL del progetto Supabase</label>
@@ -164,14 +193,7 @@ small {
     <label>Email dell'account Supabase</label><input id="loginEmail" type="email" autocomplete="username">
     <label>Password</label><input id="loginPassword" type="password" autocomplete="current-password">
     <button onclick="accedi()">Accedi</button>
-    <button onclick="recuperaPassword()" style="margin-left:8px">Password dimenticata?</button>
     <button onclick="esci()" style="margin-left:8px">Esci</button>
-  </div>
-  <div id="resetPanel" class="panel" style="display:none;margin-top:16px">
-    <h3>Imposta una nuova password</h3>
-    <label>Nuova password</label><input id="nuovaPassword" type="password" autocomplete="new-password" minlength="12">
-    <label>Conferma nuova password</label><input id="confermaPassword" type="password" autocomplete="new-password" minlength="12">
-    <button onclick="salvaNuovaPassword()">Salva nuova password</button>
   </div>
   <small>Usa soltanto la chiave pubblicabile o anon. Non inserire mai la chiave secret/service_role.</small>
 </div>
@@ -389,6 +411,55 @@ const KEY = "upgold_pro_v1";
 const CONFIG_KEY = "upgold_supabase_config_v1";
 let db = null, user = null, dati = {immobili:[],previsioni:{},movimenti:[]};
 const $ = id => document.getElementById(id);
+const PROFILE_KEY = "upgold_profile_v1";
+function toggleAccount(){
+ const menu=$("accountMenu"),open=menu.hidden;
+ menu.hidden=!open;$("accountButton").setAttribute("aria-expanded",String(open));
+ if(open) refreshAccount();
+}
+function refreshAccount(){
+ const active=!!user;
+ $("profileFields").hidden=!active;
+ $("accountEmail").textContent=user?.email||"Accedi per gestire il tuo profilo";
+ $("accountButton").textContent=active?"◉ Il mio account ▾":"◉ Accedi ▾";
+ $("configPanel").hidden=!!localStorage.getItem(CONFIG_KEY);
+ $("loginPanel").hidden=active;
+ $("accountAccess").innerHTML="";
+ const panel=$("accessoPanel");
+ if(!active){
+   $("accountAccess").appendChild(panel);
+   panel.hidden=false;
+ }else{
+   panel.hidden=true;
+   const btn=document.createElement("button");btn.textContent="Esci dall’account";btn.onclick=esci;
+   $("accountAccess").appendChild(btn);
+ }
+ loadProfile();
+}
+function loadProfile(){
+ let p={};try{p=JSON.parse(localStorage.getItem(PROFILE_KEY)||"{}");}catch(e){}
+ for(const [id,key] of [["profileName","name"],["agencyName","agency"],["agencyPhone","phone"],["agencyEmail","email"]]){
+  $(id).value=p[key]|| (id==="agencyName"?"UP GOLD":"");
+ }
+ $("agencyNamePreview").textContent=p.agency||"UP GOLD";
+ $("agencyLogoPreview").src=p.logo||"data:image/svg+xml,"+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60"><rect width="60" height="60" fill="#111"/><text x="30" y="36" fill="#c8a76b" font-size="18" text-anchor="middle">UG</text></svg>');
+ $("avatarHeader").src=$("agencyLogoPreview").src;$("avatarHeader").hidden=false;
+}
+function saveProfile(){
+ if(!user){alert("Accedi prima di salvare il profilo.");return;}
+ const profile={name:$("profileName").value.trim(),agency:$("agencyName").value.trim()||"UP GOLD",phone:$("agencyPhone").value.trim(),email:$("agencyEmail").value.trim()};
+ let previous={};try{previous=JSON.parse(localStorage.getItem(PROFILE_KEY)||"{}");}catch(e){}
+ profile.logo=previous.logo||"";
+ const file=$("agencyLogo").files[0];
+ const persist=()=>{
+  try{localStorage.setItem(PROFILE_KEY,JSON.stringify(profile));loadProfile();alert("Profilo salvato su questo browser.");}
+  catch(e){alert("Logo troppo grande per il browser. Scegli un’immagine più piccola.");}
+ };
+ if(file){
+  if(file.size>400000){alert("Usa un logo inferiore a 400 KB.");return;}
+  const reader=new FileReader();reader.onload=()=>{profile.logo=reader.result;persist();};reader.readAsDataURL(file);
+ }else persist();
+}
 const euro = n => new Intl.NumberFormat("it-IT",{style:"currency",currency:"EUR"}).format(Number(n)||0);
 function stato(msg){ $("statoConnessione").textContent=msg; }
 function errore(e){ console.error(e); alert("Operazione non riuscita: "+(e?.message||String(e))); }
@@ -413,31 +484,6 @@ async function inizializza(){
   else stato("Collegamento configurato. Accedi con il tuo account Supabase.");
  }catch(e){stato("Errore nella configurazione.");errore(e);}
 }
-let recuperoInCorso=false;
-function mostraRecupero(){
- recuperoInCorso=true;
- $("resetPanel").style.display="block";
- stato("Recupero password: inserisci una nuova password.");
-}
-async function recuperaPassword(){
- if(!db){alert("Prima configura Supabase.");return;}
- const email=$("loginEmail").value.trim();
- if(!email){alert("Inserisci prima la tua email.");return;}
- const {error}=await db.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname});
- if(error){errore(error);return;}
- alert("Se l'indirizzo è valido, riceverai un'email per reimpostare la password.");
-}
-async function salvaNuovaPassword(){
- if(!db||!recuperoInCorso){alert("Apri prima il collegamento di recupero ricevuto via email.");return;}
- const password=$("nuovaPassword").value;
- if(password.length<12||password!==$("confermaPassword").value){alert("Usa almeno 12 caratteri e verifica che le password coincidano.");return;}
- const {error}=await db.auth.updateUser({password});
- if(error){errore(error);return;}
- recuperoInCorso=false;$("resetPanel").style.display="none";
- $("nuovaPassword").value="";$("confermaPassword").value="";
- alert("Password aggiornata. Ora puoi accedere.");
- await db.auth.signOut();user=null;stato("Password aggiornata. Accedi con la nuova password.");
-}
 async function accedi(){
  if(!db){alert("Prima salva URL e chiave pubblicabile.");return;}
  const email=$("loginEmail").value.trim(),password=$("loginPassword").value;
@@ -450,7 +496,7 @@ async function accedi(){
 }
 async function esci(){
  if(db)await db.auth.signOut();
- user=null;dati={immobili:[],previsioni:{},movimenti:[]};aggiorna();stato("Disconnesso.");
+ user=null;dati={immobili:[],previsioni:{},movimenti:[]};aggiorna();stato("Disconnesso.");refreshAccount();
 }
 function immobileDaDb(r){return {id:r.id,nome:r.nome,citta:r.citta||"",tipo:r.tipologia||"",letti:r.posti_letto||0,bagni:r.bagni||0,prezzo:Number(r.prezzo_base)||0,commissione:Number(r.commissione)||0};}
 function previsioneDaDb(r){return {bassa:Number(r.prezzo_bassa)||0,alta:Number(r.prezzo_alta)||0,nb:r.notti_bassa||0,na:r.notti_alta||0,costi:Number(r.costi_previsti)||0,ricavi:Number(r.ricavi_previsti)||0,commissioni:Number(r.commissioni_previste)||0,netto:Number(r.netto_previsto)||0};}
@@ -544,7 +590,7 @@ $("immobilePrevisione").addEventListener("change",function(){
  $("nottiBassa").value=p?.nb??60;$("nottiAlta").value=p?.na??90;$("costi").value=p?.costi??0;
  aggiorna();
 });
-aggiorna();inizializza();
+aggiorna();refreshAccount();inizializza();
 </script>
 
 </body>
