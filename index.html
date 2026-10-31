@@ -164,7 +164,14 @@ small {
     <label>Email dell'account Supabase</label><input id="loginEmail" type="email" autocomplete="username">
     <label>Password</label><input id="loginPassword" type="password" autocomplete="current-password">
     <button onclick="accedi()">Accedi</button>
+    <button onclick="recuperaPassword()" style="margin-left:8px">Password dimenticata?</button>
     <button onclick="esci()" style="margin-left:8px">Esci</button>
+  </div>
+  <div id="resetPanel" class="panel" style="display:none;margin-top:16px">
+    <h3>Imposta una nuova password</h3>
+    <label>Nuova password</label><input id="nuovaPassword" type="password" autocomplete="new-password" minlength="12">
+    <label>Conferma nuova password</label><input id="confermaPassword" type="password" autocomplete="new-password" minlength="12">
+    <button onclick="salvaNuovaPassword()">Salva nuova password</button>
   </div>
   <small>Usa soltanto la chiave pubblicabile o anon. Non inserire mai la chiave secret/service_role.</small>
 </div>
@@ -405,6 +412,31 @@ async function inizializza(){
   if(user)await carica();
   else stato("Collegamento configurato. Accedi con il tuo account Supabase.");
  }catch(e){stato("Errore nella configurazione.");errore(e);}
+}
+let recuperoInCorso=false;
+function mostraRecupero(){
+ recuperoInCorso=true;
+ $("resetPanel").style.display="block";
+ stato("Recupero password: inserisci una nuova password.");
+}
+async function recuperaPassword(){
+ if(!db){alert("Prima configura Supabase.");return;}
+ const email=$("loginEmail").value.trim();
+ if(!email){alert("Inserisci prima la tua email.");return;}
+ const {error}=await db.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname});
+ if(error){errore(error);return;}
+ alert("Se l'indirizzo è valido, riceverai un'email per reimpostare la password.");
+}
+async function salvaNuovaPassword(){
+ if(!db||!recuperoInCorso){alert("Apri prima il collegamento di recupero ricevuto via email.");return;}
+ const password=$("nuovaPassword").value;
+ if(password.length<12||password!==$("confermaPassword").value){alert("Usa almeno 12 caratteri e verifica che le password coincidano.");return;}
+ const {error}=await db.auth.updateUser({password});
+ if(error){errore(error);return;}
+ recuperoInCorso=false;$("resetPanel").style.display="none";
+ $("nuovaPassword").value="";$("confermaPassword").value="";
+ alert("Password aggiornata. Ora puoi accedere.");
+ await db.auth.signOut();user=null;stato("Password aggiornata. Accedi con la nuova password.");
 }
 async function accedi(){
  if(!db){alert("Prima salva URL e chiave pubblicabile.");return;}
