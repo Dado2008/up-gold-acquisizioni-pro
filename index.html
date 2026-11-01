@@ -219,6 +219,12 @@ small {
     </div>
 
     <div class="card">
+      <h3>Netto annuo previsto proprietario</h3>
+      <div class="number" id="nettoProprietario">€ 0,00</div>
+      <small>Prima di costi e imposte a carico del proprietario</small>
+    </div>
+
+    <div class="card">
       <h3>Immobili registrati</h3>
       <div class="number" id="totImmobili">0</div>
     </div>
@@ -575,7 +581,7 @@ function aggiorna(){
  if(dati.immobili.some(x=>x.id===selezionato))select.value=selezionato;
  let fatturato=0,commissioni=0,netto=0;
  Object.values(dati.previsioni).forEach(p=>{fatturato+=p.ricavi;commissioni+=p.commissioni;netto+=p.netto;});
- $("fatturato").textContent=euro(fatturato);$("commissioni").textContent=euro(commissioni);$("netto").textContent=euro(netto);$("totImmobili").textContent=dati.immobili.length;
+ $("fatturato").textContent=euro(fatturato);$("commissioni").textContent=euro(commissioni);$("netto").textContent=euro(netto);$("nettoProprietario").textContent=euro(fatturato-commissioni);$("totImmobili").textContent=dati.immobili.length;
  const entrate=dati.movimenti.filter(x=>x.tipo==="entrata").reduce((s,x)=>s+x.importo,0);
  const uscite=dati.movimenti.filter(x=>x.tipo==="uscita").reduce((s,x)=>s+x.importo,0);
  $("entrateReali").textContent=euro(entrate);$("usciteReali").textContent=euro(uscite);$("saldoReale").textContent=euro(entrate-uscite);$("riepilogo").textContent="Saldo effettivo registrato: "+euro(entrate-uscite);
